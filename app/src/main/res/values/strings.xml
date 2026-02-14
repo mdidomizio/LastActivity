@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">LastActive</string>
+    <string name="home_screen_title">Activity status</string>
+    <string name="back_button_content_description">Go back button</string>
+    <string name="profile_image_content_description">Image of the profile</string>
+    <string name="profile_name">Alice Cooper</string>
+</resources>
