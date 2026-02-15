@@ -5,12 +5,10 @@ import android.icu.util.Calendar
 import android.os.Build
 import android.text.format.DateUtils
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.lastactive.LastActiveRepository
 import com.example.lastactive.R
 import java.text.SimpleDateFormat
@@ -19,66 +17,56 @@ import java.util.Locale
 @RequiresApi(Build.VERSION_CODES.O)
 class HomeViewModel(
     application: Application
-) : AndroidViewModel(application), DefaultLifecycleObserver {
+) : AndroidViewModel(application) {
     private val repository = LastActiveRepository(application)
-    private val _activityStatus = mutableStateOf("No Activity yet")
-    val activityStatus: State<String> = _activityStatus
+    var activityStatus by mutableStateOf("")
+        private set
 
     init {
-        ProcessLifecycleOwner.get()
-            .lifecycle
-            .addObserver(this)
-
-        updateActivityText()
+        refreshStatus()
     }
 
-    override fun onStop(owner: LifecycleOwner) {
-        super.onStop(owner)
-        val now = System.currentTimeMillis()
-        repository.saveLastActive(now)
+    fun saveBackgroundTimestamp() {
+        repository.saveLastActive(System.currentTimeMillis())
     }
 
-    override fun onStart(owner: LifecycleOwner) {
-        updateActivityText()
-    }
+    fun refreshStatus() {
+        val timestamp = repository.getLastActive()
+        val context = getApplication<Application>().applicationContext
 
-    private fun updateActivityText() {
-        val timestamp =  repository.getLastActive()
-        val context = getApplication<Application>()
         if (timestamp == null) {
-            _activityStatus.value = context.getString(R.string.not_active_yet)
+            activityStatus = context.getString(R.string.not_active_yet)
             return
-        }
-        val now = Calendar.getInstance()
-        val lastActive = Calendar.getInstance().apply {
-            timeInMillis = timestamp
         }
 
         when {
             DateUtils.isToday(timestamp) -> {
                 val format = SimpleDateFormat("HH:mm", Locale.getDefault())
-                _activityStatus.value =
-                    context.getString(R.string.last_active_today, format.format(timestamp))
+                activityStatus = context.getString(R.string.last_active_today, format.format(timestamp))
             }
 
-            isYesterday(lastActive, now) -> {
-                _activityStatus.value = context.getString(R.string.last_active_yesterday)
+            isYesterday(timestamp) -> {
+                activityStatus = context.getString(R.string.last_active_yesterday)
             }
+
             else -> {
                 val format = SimpleDateFormat("MMM dd", Locale.getDefault())
-                _activityStatus.value =
-                    context.getString(R.string.last_active_old, format.format(timestamp))
-
+                activityStatus = context.getString(R.string.last_active_old, format.format(timestamp))
             }
         }
     }
 
-    private fun isYesterday(
-        last: Calendar,
-        now: Calendar
-    ): Boolean {
-        val yesterday = (now.clone() as Calendar).apply{ add(Calendar.DAY_OF_YEAR, -1) }
-        return yesterday.get(Calendar.YEAR) == last.get(Calendar.YEAR) &&
-                yesterday.get(Calendar.DAY_OF_YEAR) == last.get(Calendar.DAY_OF_YEAR)
+    private fun isYesterday(timestamp: Long): Boolean {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, -1)
+
+        val yesterdayYear = calendar.get(Calendar.YEAR)
+        val yesterdayDay = calendar.get(Calendar.DAY_OF_YEAR)
+
+        val last = Calendar.getInstance().apply {
+            timeInMillis = timestamp
+        }
+        return yesterdayYear == last.get(Calendar.YEAR) &&
+                yesterdayDay == last.get(Calendar.DAY_OF_YEAR)
     }
 }
