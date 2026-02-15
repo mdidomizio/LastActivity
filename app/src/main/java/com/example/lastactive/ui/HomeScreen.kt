@@ -1,6 +1,8 @@
 package com.example.lastactive.ui
 
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,13 +39,16 @@ import androidx.compose.ui.unit.sp
 import com.example.lastactive.R
 import com.example.lastactive.ui.theme.Figtree
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    viewModel: HomeViewModel,
     modifier: Modifier = Modifier
-){
+) {
     val backgroundColor = colorResource(id = R.color.background)
-    val activityStatus = remember { "Active now" }
+    val activityStatus = viewModel.activityStatus
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -63,10 +68,10 @@ fun HomeScreen(
                         onClick = {},
                         modifier = Modifier
                             .border(
-                            color = colorResource(R.color.outline),
-                            width = 1.dp,
+                                color = colorResource(R.color.outline),
+                                width = 1.dp,
                                 shape = CircleShape
-                        )
+                            )
                             .size(44.dp),
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = colorResource(id = R.color.background),
@@ -124,14 +129,12 @@ fun HomeScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = activityStatus,
+                text = activityStatus.value,
                 fontFamily = Figtree,
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
                 color = colorResource(id = R.color.text_secondary)
             )
         }
-
-
     }
 }

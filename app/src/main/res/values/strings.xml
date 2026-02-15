@@ -4,4 +4,8 @@
     <string name="back_button_content_description">Go back button</string>
     <string name="profile_image_content_description">Image of the profile</string>
     <string name="profile_name">Alice Cooper</string>
+    <string name="not_active_yet">No activity yet</string>
+    <string name="last_active_today">Last active at %1$s</string>
+    <string name="last_active_yesterday">Last active yesterday</string>
+    <string name="last_active_old">Last active on %1$s</string>
 </resources>
