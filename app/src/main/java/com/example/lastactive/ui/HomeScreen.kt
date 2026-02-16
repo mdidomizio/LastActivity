@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lastactive.R
 import com.example.lastactive.ui.theme.Figtree
 
@@ -50,16 +52,14 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = colorResource(id = R.color.background)
-    val activityStatus = viewModel.activityStatus
+    val activityStatus by viewModel.activityStatus.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_STOP -> {
                     viewModel.saveBackgroundTimestamp()
-                }
-                Lifecycle.Event.ON_START -> {
-                    viewModel.refreshStatus()
                 }
                 else -> Unit
             }

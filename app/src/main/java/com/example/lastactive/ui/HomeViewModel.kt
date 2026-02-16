@@ -1,16 +1,21 @@
 package com.example.lastactive.ui
 
+import android.annotation.SuppressLint
 import android.app.Application
+import android.content.Context
 import android.icu.util.Calendar
 import android.os.Build
 import android.text.format.DateUtils
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.lastactive.LastActiveRepository
 import com.example.lastactive.R
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -19,39 +24,46 @@ class HomeViewModel(
     application: Application
 ) : AndroidViewModel(application) {
     private val repository = LastActiveRepository(application)
-    var activityStatus by mutableStateOf("")
-        private set
-
-    init {
-        refreshStatus()
-    }
-
-    fun saveBackgroundTimestamp() {
-        repository.saveLastActive(System.currentTimeMillis())
-    }
-
-    fun refreshStatus() {
-        val timestamp = repository.getLastActive()
-        val context = getApplication<Application>().applicationContext
-
-        if (timestamp == null) {
-            activityStatus = context.getString(R.string.not_active_yet)
-            return
+    @SuppressLint("StaticFieldLeak")
+    val context: Context? = getApplication<Application>().applicationContext
+    var activityStatus: StateFlow<String> =
+        repository.lastActiveFlow
+            .map { timestamp ->
+                formatTimestamp(timestamp)
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = context?.getString(R.string.not_active_yet) ?: ""
+            )
+    fun saveBackgroundTimestamp(){
+        viewModelScope.launch {
+            repository.saveLastActive(System.currentTimeMillis())
         }
+    }
 
-        when {
+    private fun formatTimestamp(timestamp: Long?): String {
+        if (timestamp == null) return context?.getString(R.string.not_active_yet) ?: ""
+
+        return when {
             DateUtils.isToday(timestamp) -> {
                 val format = SimpleDateFormat("HH:mm", Locale.getDefault())
-                activityStatus = context.getString(R.string.last_active_today, format.format(timestamp))
+                context?.getString(
+                    R.string.last_active_today,
+                    format.format(timestamp)
+                ) ?: ""
             }
 
             isYesterday(timestamp) -> {
-                activityStatus = context.getString(R.string.last_active_yesterday)
+                context?.getString(R.string.last_active_yesterday) ?: ""
             }
 
             else -> {
                 val format = SimpleDateFormat("MMM dd", Locale.getDefault())
-                activityStatus = context.getString(R.string.last_active_old, format.format(timestamp))
+                context?.getString(
+                    R.string.last_active_old,
+                    format.format(timestamp)
+                ) ?: ""
             }
         }
     }
